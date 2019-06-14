@@ -1,7 +1,7 @@
 #Lindsay Poirier created this script.
 import re
 import string
-import urlparse
+import urllib.parse
 import requests
 import csv
 
@@ -10,7 +10,7 @@ from selenium import webdriver
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.chrome.options import Options
 
 from bs4 import BeautifulSoup
 
@@ -19,8 +19,8 @@ class AHV_Scraper(object):
         # Create CSV file
         options = Options()
         options.add_argument("--headless")
-        driver = webdriver.Firefox(firefox_options=options)
-        driver2 = webdriver.Firefox(firefox_options=options)
+        driver = webdriver.Chrome(executable_path="./chromedriver")
+        driver2 = webdriver.Chrome(executable_path="./chromedriver")
 
         f = csv.writer(open("After_Hours_Variances.csv", "w"))
         f.writerow(["AHVURL","jobNumber","referenceNumber","status","entryDate","filingType","houseNumber","streetName","borough", "BIN", "name","businessName","licenseNumber","nearResidence","enclosedBuilding","demolition","crane","requested", "approved","startDay","days","hoursFrom","hoursTo","reason","approvedReason","description"]) # Write column headers as the first line
@@ -29,23 +29,23 @@ class AHV_Scraper(object):
             for BIN in BINList:
                 AHVBINURL = 'http://a810-bisweb.nyc.gov/bisweb/AHVPermitsQueryByNumberServlet?requestid=1&allkey=' + str(BIN[0]) + '&fillerdata=A'
                 driver2.get(AHVBINURL)
-                print AHVBINURL
+                print(AHVBINURL)
 
                 while True:
                     BINHTML = driver2.page_source
                     AHVBINSoup = BeautifulSoup(BINHTML, "lxml")
-                    print AHVBINSoup.title.string
+                    print(AHVBINSoup.title.string)
                     AHVReferenceNumberTable = AHVBINSoup.findAll('table')[3]
-                    print 'starting page'
+                    print('starting page')
                     for row in AHVReferenceNumberTable.findAll('tr')[1:]:
                         referenceNo = row.findAll('td')[0].a.string
                         AHVURL = "http://a810-bisweb.nyc.gov/bisweb/AHVPermitDetailsServlet?requestid=2&allkey=" + referenceNo
-                        print AHVURL
+                        print(AHVURL)
                         #AHVRequest = requests.get(AHVURL)
                         driver.get(AHVURL)
                         AHVHTML = driver.page_source
                         AHVSoup = BeautifulSoup(AHVHTML, "lxml")
-                        print AHVSoup.title.string
+                        print(AHVSoup.title.string)
                         AHVTablePremises = AHVSoup.findAll('table')[2]
                         AHVTableFiling = AHVSoup.findAll('table')[3]
                         AHVTableLocation = AHVSoup.findAll('table')[4]
@@ -94,8 +94,8 @@ class AHV_Scraper(object):
                             else:
                                 crane = "no"
 
-                        requested = AHVTableVariance.findAll('tr')[6].findAll('td')[0].text.replace(u'\xa0', "").replace('Total Days Requested:',"").encode('utf-8')
-                        approved = AHVTableVariance.findAll('tr')[7].findAll('td')[0].text.replace(u'\xa0', "").replace('Total Days Approved:',"").encode('utf-8')
+                        requested = AHVTableVariance.findAll('tr')[6].findAll('td')[0].text.replace('\xa0', "").replace('Total Days Requested:',"").encode('utf-8')
+                        approved = AHVTableVariance.findAll('tr')[7].findAll('td')[0].text.replace('\xa0', "").replace('Total Days Approved:',"").encode('utf-8')
                         startDay = AHVTableVariance.findAll('tr')[10].findAll('td')[0].string
                         days = AHVTableVariance.findAll('tr')[10].findAll('td')[1].string
                         try:
@@ -107,10 +107,10 @@ class AHV_Scraper(object):
                         except:
                             hoursTo = 'null'
                         findReason = AHVTableVariance.findAll('b',text = re.compile('Apply Reason:.*'))[0]
-                        reason = findReason.parent.text.replace(u'\xa0', "").replace('Apply Reason:',"").strip().encode('utf-8')
+                        reason = findReason.parent.text.replace('\xa0', "").replace('Apply Reason:',"").strip().encode('utf-8')
                         try:
                             findApprovedReason = AHVTableVariance.findAll('b',text = re.compile('Approved:.*'))[1]
-                            approvedReason = findApprovedReason.parent.text.replace(u'\xa0', "").replace('Approved:',"").strip().encode('utf-8')
+                            approvedReason = findApprovedReason.parent.text.replace('\xa0', "").replace('Approved:',"").strip().encode('utf-8')
                         except IndexError:
                             approvedReason = 'null'
                         try:
@@ -120,14 +120,14 @@ class AHV_Scraper(object):
                             description = 'null'
                         f.writerow([AHVURL,jobNumber,referenceNumber,status,entryDate,filingType,houseNumber,streetName,borough,BIN,name, businessName,licenseNumber,nearResidence,enclosedBuilding,demolition,crane,requested,approved,startDay,days,hoursFrom,hoursTo,reason,approvedReason,description])
 
-                    print 'page complete'
+                    print('page complete')
                     try:
                         nextPageElem = driver2.find_element_by_name('next')
-                        print 'success'
+                        print('success')
                     except NoSuchElementException:
                         break
                     nextPageElem.click()
-                    print 'clicked'
+                    print('clicked')
 
 
         driver.quit()
