@@ -4,7 +4,8 @@ import string
 import urllib.parse
 import requests
 import csv
-
+import json
+import time
 
 from selenium import webdriver
 from selenium.webdriver.support.ui import Select
@@ -19,11 +20,11 @@ class AHV_Scraper(object):
         # Create CSV file
         options = Options()
         options.add_argument("--headless")
-        driver = webdriver.Chrome(executable_path="./chromedriver")
-        driver2 = webdriver.Chrome(executable_path="./chromedriver")
+        driver = webdriver.Chrome(executable_path="./chromedriver", options=options)
+        driver2 = webdriver.Chrome(executable_path="./chromedriver", options=options)
 
         f = csv.writer(open("After_Hours_Variances.csv", "w"))
-        f.writerow(["AHVURL","jobNumber","referenceNumber","status","entryDate","filingType","houseNumber","streetName","borough", "BIN", "name","businessName","licenseNumber","nearResidence","enclosedBuilding","demolition","crane","requested", "approved","startDay","days","hoursFrom","hoursTo","reason","approvedReason","description"]) # Write column headers as the first line
+        f.writerow(["AHVURL","jobNumber","referenceNumber","status","entryDate","filingType","houseNumber","streetName","borough", "BIN", "name","businessName","licenseNumber","nearResidence","enclosedBuilding","demolition","crane","requested", "approved", "days" ,"reason","approvedReason","description"]) # Write column headers as the first line
         with open('MNCD1BINS.csv') as csvfile:
             BINList = csv.reader(csvfile)
             for BIN in BINList:
@@ -32,12 +33,14 @@ class AHV_Scraper(object):
                 print(AHVBINURL)
 
                 while True:
+                    time.sleep(.5)
                     BINHTML = driver2.page_source
                     AHVBINSoup = BeautifulSoup(BINHTML, "lxml")
                     print(AHVBINSoup.title.string)
                     AHVReferenceNumberTable = AHVBINSoup.findAll('table')[3]
                     print('starting page')
                     for row in AHVReferenceNumberTable.findAll('tr')[1:]:
+                        time.sleep(.5)
                         referenceNo = row.findAll('td')[0].a.string
                         AHVURL = "http://a810-bisweb.nyc.gov/bisweb/AHVPermitDetailsServlet?requestid=2&allkey=" + referenceNo
                         print(AHVURL)
@@ -98,14 +101,35 @@ class AHV_Scraper(object):
                         approved = AHVTableVariance.findAll('tr')[7].findAll('td')[0].text.replace('\xa0', "").replace('Total Days Approved:',"").encode('utf-8')
                         startDay = AHVTableVariance.findAll('tr')[10].findAll('td')[0].string
                         days = AHVTableVariance.findAll('tr')[10].findAll('td')[1].string
-                        try:
-                            hoursFrom = AHVTableVariance.findAll('tr')[10].findAll('td')[2].string
-                        except:
-                            hoursFrom = 'null'
-                        try:
-                            hoursTo = AHVTableVariance.findAll('tr')[10].findAll('td')[3].string
-                        except:
-                            hoursTo = 'null'
+
+                        i = 10
+                        done = False
+                        days = {}
+
+                        while not done:
+                            day = AHVTableVariance.findAll('tr')[i].findAll('td')[0].string
+                            hours_from = AHVTableVariance.findAll('tr')[i].findAll('td')[2].string
+                            hours_to = AHVTableVariance.findAll('tr')[i].findAll('td')[3].string
+
+                            days[day] = {"from": hours_from, "to": hours_to}
+
+                            i += 1
+                            
+                            try:
+                                done = bool(re.search("eRenew", AHVTableVariance.findAll('tr')[i].findAll('td')[0].findAll('b')[0].string))
+                            except IndexError:
+                                done = False
+
+                        days_out = json.dumps(days)
+
+                        # try:
+                        #     hoursFrom = AHVTableVariance.findAll('tr')[10].findAll('td')[2].string
+                        # except:
+                        #     hoursFrom = 'null'
+                        # try:
+                        #     hoursTo = AHVTableVariance.findAll('tr')[10].findAll('td')[3].string
+                        # except:
+                        #     hoursTo = 'null'
                         findReason = AHVTableVariance.findAll('b',text = re.compile('Apply Reason:.*'))[0]
                         reason = findReason.parent.text.replace('\xa0', "").replace('Apply Reason:',"").strip().encode('utf-8')
                         try:
@@ -118,7 +142,7 @@ class AHV_Scraper(object):
                             description = findDescription.findNext('td').string
                         except IndexError:
                             description = 'null'
-                        f.writerow([AHVURL,jobNumber,referenceNumber,status,entryDate,filingType,houseNumber,streetName,borough,BIN,name, businessName,licenseNumber,nearResidence,enclosedBuilding,demolition,crane,requested,approved,startDay,days,hoursFrom,hoursTo,reason,approvedReason,description])
+                        f.writerow([AHVURL,jobNumber,referenceNumber,status,entryDate,filingType,houseNumber,streetName,borough,BIN,name, businessName,licenseNumber,nearResidence,enclosedBuilding,demolition,crane,requested,approved,days,reason,approvedReason,description])
 
                     print('page complete')
                     try:
