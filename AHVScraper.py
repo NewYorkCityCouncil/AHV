@@ -25,7 +25,7 @@ class AHV_Scraper(object):
 
         f = csv.writer(open("After_Hours_Variances.csv", "w"))
         f.writerow(["AHVURL","jobNumber","referenceNumber","status","entryDate","filingType","houseNumber","streetName","borough", "BIN", "name","businessName","licenseNumber","nearResidence","enclosedBuilding","demolition","crane","requested", "approved", "days" ,"reason","approvedReason","description"]) # Write column headers as the first line
-        with open('MNCD1BINS.csv') as csvfile:
+        with open('bin_sample.csv') as csvfile:
             BINList = csv.reader(csvfile)
             for BIN in BINList:
                 AHVBINURL = 'http://a810-bisweb.nyc.gov/bisweb/AHVPermitsQueryByNumberServlet?requestid=1&allkey=' + str(BIN[0]) + '&fillerdata=A'
@@ -114,7 +114,7 @@ class AHV_Scraper(object):
                             days[day] = {"from": hours_from, "to": hours_to}
 
                             i += 1
-                            
+
                             try:
                                 done = bool(re.search("eRenew", AHVTableVariance.findAll('tr')[i].findAll('td')[0].findAll('b')[0].string))
                             except IndexError:
