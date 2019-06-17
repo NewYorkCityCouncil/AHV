@@ -20,8 +20,8 @@ class AHV_Scraper(object):
         # Create CSV file
         options = Options()
         options.add_argument("--headless")
-        driver = webdriver.Chrome(executable_path="./chromedriver", options=options)
-        driver2 = webdriver.Chrome(executable_path="./chromedriver", options=options)
+        driver = webdriver.Chrome(options=options)
+        driver2 = webdriver.Chrome(options=options)
 
         f = csv.writer(open("After_Hours_Variances.csv", "w"))
         f.writerow(["AHVURL","jobNumber","referenceNumber","status","entryDate","filingType","houseNumber","streetName","borough", "BIN", "name","businessName","licenseNumber","nearResidence","enclosedBuilding","demolition","crane","requested", "approved", "days" ,"reason","approvedReason","description"]) # Write column headers as the first line
