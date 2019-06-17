@@ -33,14 +33,14 @@ class AHV_Scraper(object):
                 print(AHVBINURL)
 
                 while True:
-                    time.sleep(.5)
+                    time.sleep(1)
                     BINHTML = driver2.page_source
                     AHVBINSoup = BeautifulSoup(BINHTML, "lxml")
                     print(AHVBINSoup.title.string)
                     AHVReferenceNumberTable = AHVBINSoup.findAll('table')[3]
                     print('starting page')
                     for row in AHVReferenceNumberTable.findAll('tr')[1:]:
-                        time.sleep(.5)
+                        time.sleep(1)
                         referenceNo = row.findAll('td')[0].a.string
                         AHVURL = "http://a810-bisweb.nyc.gov/bisweb/AHVPermitDetailsServlet?requestid=2&allkey=" + referenceNo
                         print(AHVURL)
